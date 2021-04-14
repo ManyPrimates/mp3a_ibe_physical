@@ -1,6 +1,6 @@
 # ManyPrimates 3A - inference by exclusion in physical tasks
 
-> Project to assess primates' ability to make choices by excluding alternative options in a series of physical tasks
+Project to assess primates' ability to make choices by excluding alternative options in a series of physical tasks
 
 ## Structure (to be)
 
