@@ -1,0 +1,68 @@
+---
+title: "Data simulation"
+output: html_document
+date: "2023-01-26"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(tidyboot)
+library(brms)
+library(ggrepel)
+```
+
+
+
+```{r}
+data <- read_xlsx("../data/Raw Data.xlsx")%>%
+  mutate(condition = case_when(
+    Right == "E+" | Left == "E+" ~ "empty",
+    Right == "B+" | Left == "B+" ~ "baited",
+    Right == "C" | Left == "C" ~ "no_information"))%>%
+  mutate(hiding_location = case_when(
+    grepl("B", Left) ~ "left",
+    grepl("B", Right) ~ "right"))%>%
+  mutate(correct = `Response 0=incorrect; 1= correct`)%>%
+  select(-Left, -Right, -`Response 0=incorrect; 1= correct`, -`...7`, -`...8`)
+  
+
+```
+
+
+```{r}
+sum1 <- data%>%
+  group_by(Name, condition)%>%
+  summarise(mean = mean(correct, na.rm = T))
+
+sum2 <- data%>%
+  group_by(condition)%>%
+  tidyboot_mean(column = correct, na.rm = T)
+  
+ggplot(sum1, aes(x = condition, y= mean, col = Name))+
+  geom_hline(yintercept = 0.5, lty = 3)+
+  geom_point( alpha = .5)+
+  guides(col = "none")+
+  geom_line( alpha = .5, aes(group = Name, col = Name),alpha = .5)+
+  geom_label_repel(data = sum1 %>%filter(condition == "no_information"), aes(y = mean, label = Name), nudge_x = 0.25)+
+  geom_pointrange(data = sum2, aes(y = mean, ymin = ci_lower, ymax = ci_upper),  col = "firebrick")+
+  ylim(0,1)+
+  theme_minimal()
+
+
+```
+
+```{r}
+mdata <- data%>%
+  mutate(condition = factor(condition, levels = c("no_information", "empty", "baited")))
+
+m1 <- brm(correct ~ condition + (condition|Name),
+      data = mdata,
+      family = bernoulli(),
+      chains = 3, 
+      cores = 3)
+
+
+ranef(m1)
+```
+
